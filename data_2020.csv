@@ -1,0 +1,21 @@
+areaType,areaName,areaCode,date,cumPeopleVaccinatedFirstDoseByPublishDate,cumPeopleVaccinatedSecondDoseByPublishDate
+nation,England,E92000001,2020-12-06,0,
+nation,Northern Ireland,N92000002,2020-12-06,0,
+nation,Scotland,S92000003,2020-12-06,0,
+nation,Wales,W92000004,2020-12-06,0,
+nation,England,E92000001,2020-12-13,171531,
+nation,Northern Ireland,N92000002,2020-12-13,3623,
+nation,Scotland,S92000003,2020-12-13,18734,
+nation,Wales,W92000004,2020-12-13,8177,
+nation,England,E92000001,2020-12-20,552385,
+nation,Northern Ireland,N92000002,2020-12-20,16068,
+nation,Scotland,S92000003,2020-12-20,58800,
+nation,Wales,W92000004,2020-12-20,23461,
+nation,England,E92000001,2020-12-27,804325,
+nation,Northern Ireland,N92000002,2020-12-27,31016,
+nation,Scotland,S92000003,2020-12-27,92324,
+nation,Wales,W92000004,2020-12-27,35543,
+nation,England,E92000001,2021-01-03,1092885,19981
+nation,Northern Ireland,N92000002,2021-01-03,40685,1271
+nation,Scotland,S92000003,2021-01-03,113459,36
+nation,Wales,W92000004,2021-01-03,49403,25
