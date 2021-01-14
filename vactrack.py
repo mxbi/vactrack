@@ -64,6 +64,7 @@ estimated_r_reduction = (total_first_doses * ONE_DOSE_IMMUNITY + total_second_do
 print(doses_england)
 
 cumdoses_by_date = data.groupby('date')[[_first, _second]].sum().sum(axis=1)
+people_by_date = data.groupby('date')[_first].sum()
 print(cumdoses_by_date)
 
 # print(cumdoses_by_date.index.to_series())
@@ -72,12 +73,11 @@ print(cumdoses_by_date.index)
 cumdoses = cumdoses_by_date.resample('D').interpolate('slinear')
 daily_rates = cumdoses.diff(1)
 weekly_rates = cumdoses.diff(7)
-# date_basis = pd.Timestamp(year=2020, month=12, day=6)
-# cumdoses_x = cumdoses_by_date.index.to_series() - date_basis
-# print(cumdoses_x)
 
-# daily_rate = cumdoses_by_date.diff(1) / cumdoses_by_date.index.to_series().diff(1)
-# print(daily_rate)
+daily_rates = daily_rates[daily_rates.index >= pd.Timestamp(year=2021, month=1, day=10)] # Only valid after daily data starts being published
+# Need to correct initial NaNs
+weekly_rates.iloc[:8] = np.linspace(0, weekly_rates.iloc[7], 8)
+print(weekly_rates)
 
 ########## DASH
 
@@ -89,7 +89,10 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets, external_sc
 server = app.server
 
 # fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
-fig_doses = px.line(cumdoses_by_date)
+# fig_doses = px.line(cumdoses_by_date, name='Total')
+fig_doses = go.Figure()
+fig_doses.add_trace(go.Scatter(x=cumdoses_by_date.index, y=cumdoses_by_date, name='Doses'))
+fig_doses.add_trace(go.Scatter(x=people_by_date.index, y=people_by_date.values, name='People'))
 fig_doses.data[0].update(mode='markers+lines')
 
 fig_doses.update_layout(title="Total doses given in UK", xaxis_title="Date", yaxis_title="Cumulative doses", font=dict(size=15, family="nimbus-sans"))
@@ -127,7 +130,7 @@ Scotland: **{summarize(doses_per_capita_scotland)}**
 Wales: **{summarize(doses_per_capita_wales)}**  
 Northern Ireland: **{summarize(doses_per_capita_ni)}**  
     """),
-    ], style={"margin-left": "2em"}),
+    ]),
 
     html.Div([
         html.Div([
@@ -138,8 +141,10 @@ Northern Ireland: **{summarize(doses_per_capita_ni)}**
         ], className="six columns"),
 
         html.Div([dcc.Graph(id='graph2',figure=fig_rate)], className="six columns")
-    ], className="row")
-])
+    ], className="row"),
+
+    html.I(["Data up to {}. Data generally updates every day after 4pm.".format(daily_rates.index[-1] + pd.Timedelta(days=1))])
+], style={"margin-left": "2em", "margin-right": "2em"})
 
 if __name__ == '__main__':
     app.run_server(debug=True)
