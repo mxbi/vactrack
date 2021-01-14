@@ -86,6 +86,7 @@ external_scripts =[]# ["https://use.typekit.net/dvr4nik.css"]
 # external_stylesheets = ["https://raw.githubusercontent.com/plotly/dash-app-stylesheets/master/dash-uber-ride-demo.css"]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, external_scripts=external_scripts)
+server = app.server
 
 # fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
 fig_doses = px.line(cumdoses_by_date)
