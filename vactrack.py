@@ -44,7 +44,7 @@ date_range = data['date'].unique()
 latest_date = date_range.max()
 latest = data[data.date == latest_date]
 print(latest_date)
-data_up_to = data['date'].values[-1] + pd.Timedelta(days=1)
+data_up_to = data['date'].max() + pd.Timedelta(days=1)
 
 total_first_doses = latest['cumPeopleVaccinatedFirstDoseByPublishDate'].sum()
 total_second_doses = latest['cumPeopleVaccinatedSecondDoseByPublishDate'].sum()
