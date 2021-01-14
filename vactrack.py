@@ -26,7 +26,7 @@ WALES_POPULATION = 3_082_000
 NI_POPULATION = 1_862_000
 UK_POPULATION = ENGLAND_POPULATION + SCOTLAND_POPULATION + WALES_POPULATION + NI_POPULATION
 
-ONE_DOSE_IMMUNITY = 0.8
+ONE_DOSE_IMMUNITY = 0.7
 TWO_DOSE_IMMUNITY = 0.9
 
 _first = 'cumPeopleVaccinatedFirstDoseByPublishDate'
@@ -44,6 +44,7 @@ date_range = data['date'].unique()
 latest_date = date_range.max()
 latest = data[data.date == latest_date]
 print(latest_date)
+data_up_to = data['date'].values[-1] + pd.Timedelta(days=1)
 
 total_first_doses = latest['cumPeopleVaccinatedFirstDoseByPublishDate'].sum()
 total_second_doses = latest['cumPeopleVaccinatedSecondDoseByPublishDate'].sum()
@@ -77,7 +78,11 @@ weekly_rates = cumdoses.diff(7)
 daily_rates = daily_rates[daily_rates.index >= pd.Timestamp(year=2021, month=1, day=10)] # Only valid after daily data starts being published
 # Need to correct initial NaNs
 weekly_rates.iloc[:8] = np.linspace(0, weekly_rates.iloc[7], 8)
-print(weekly_rates)
+
+date_15mil = data_up_to + pd.Timedelta(days=(15_000_000 - total_doses) / (weekly_rates.values[-1] / 7))
+print(date_15mil)
+days_until_15feb = (pd.Timestamp(year=2021, month=2, day=16) - data_up_to).days
+weekly_rate_needed_15mil = (15_000_000 - total_doses) / days_until_15feb * 7
 
 ########## DASH
 
@@ -122,9 +127,12 @@ app.layout = html.Div(children=[
 Last day:  **{summarize(daily_rates.values[-1])}** doses/day ({summarize(daily_rates.values[-1] * 7)} doses/week)  
 Last week: **{summarize(weekly_rates.values[-1])}** doses/week
 
-Estimated population immunity due to vaccination: **{round(estimated_r_reduction*100, 2)}%**
+Estimated population immunity due to vaccination: **{round(estimated_r_reduction*100, 2)}%** (crude)
 
-### Doses per capita
+At the current rate, 15M doses will be reached on **{date_15mil.strftime('%B %d, %Y')}** (target Feb 15)  
+To meet the target, we need to average **{summarize(weekly_rate_needed_15mil)} doses/week**
+
+#### Doses per capita
 England: **{summarize(doses_per_capita_england)}**  
 Scotland: **{summarize(doses_per_capita_scotland)}**  
 Wales: **{summarize(doses_per_capita_wales)}**  
@@ -143,7 +151,7 @@ Northern Ireland: **{summarize(doses_per_capita_ni)}**
         html.Div([dcc.Graph(id='graph2',figure=fig_rate)], className="six columns")
     ], className="row"),
 
-    html.I(["Data up to {}. Data generally updates every day after 4pm.".format(daily_rates.index[-1] + pd.Timedelta(days=1))])
+    html.I(["Data up to {}. Data generally updates every day after 4pm.".format(data_up_to)])
 ], style={"margin-left": "2em", "margin-right": "2em"})
 
 if __name__ == '__main__':
