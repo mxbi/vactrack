@@ -107,7 +107,7 @@ fig_rate = go.Figure()
 fig_rate.add_trace(go.Scatter(x=daily_rates.index, y=daily_rates.values*7, name="1 day rate", line=dict(dash="dash")))
 fig_rate.add_trace(go.Scatter(x=weekly_rates.index, y=weekly_rates.values, name="1 week rate"))
 fig_rate.update_layout(title="Vaccination rate", xaxis_title="Date", yaxis_title="Doses/week", font=dict(size=15, family="nimbus-sans"), legend_title_text="Calculated over")
-fig_rate.update_yaxes(range=[0, 2000000])
+fig_rate.update_yaxes(range=[0, daily_rates.max() * 7 * 1.05])
 # fig_rate.add_scatter(x=weekly_rates.index, y=weekly_rates.values, mode='lines', name="Weekly")
 
 app.layout = html.Div(children=[
