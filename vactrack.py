@@ -87,7 +87,7 @@ weekly_rate_needed_15mil = (15_000_000 - total_doses) / days_until_15feb * 7
 ########## DASH
 
 external_stylesheets = ["https://use.typekit.net/dvr4nik.css"]#['https://codepen.io/chriddyp/pen/bWLwgP.css']
-external_scripts =[]# ["https://use.typekit.net/dvr4nik.css"]
+external_scripts =["https://www.googletagmanager.com/gtag/js?id=G-PQLR8YLNS9"]# ["https://use.typekit.net/dvr4nik.css"]
 # external_stylesheets = ["https://raw.githubusercontent.com/plotly/dash-app-stylesheets/master/dash-uber-ride-demo.css"]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, external_scripts=external_scripts)
@@ -111,6 +111,11 @@ fig_rate.update_yaxes(range=[0, daily_rates.max() * 7 * 1.05])
 # fig_rate.add_scatter(x=weekly_rates.index, y=weekly_rates.values, mode='lines', name="Weekly")
 
 app.layout = html.Div(children=[
+    html.Script("""  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-PQLR8YLNS9');"""),
     # html.H1(children='CovidTrack | Vaccine Rollout'),
 
     # html.Div(children=[
