@@ -151,8 +151,10 @@ Northern Ireland: **{summarize(doses_per_capita_ni)}**
         html.Div([dcc.Graph(id='graph2',figure=fig_rate)], className="six columns")
     ], className="row"),
 
-    html.I(["Data up to {}. Data generally updates every day after 4pm.".format(data_up_to)])
-], style={"margin-left": "2em", "margin-right": "2em"})
+    html.I(["Data up to {}. Data generally updates every day after 4pm.".format(data_up_to)]),
+    html.Br(),
+    dcc.Markdown("Made by [Mikel Bober-Irizar](https://twitter.com/mikb0b). Data from [UK Coronavirus Dashboard](https://coronavirus.data.gov.uk/details/healthcare)"),
+],  style={"margin-left": "2em", "margin-right": "2em"})
 
 if __name__ == '__main__':
     app.run_server(debug=True)
