@@ -84,6 +84,11 @@ print(date_15mil)
 days_until_15feb = (pd.Timestamp(year=2021, month=2, day=16) - data_up_to).days
 weekly_rate_needed_15mil = (15_000_000 - total_doses) / days_until_15feb * 7
 
+date_32mil = data_up_to + pd.Timedelta(days=(32_000_000 - total_doses) / (weekly_rates.values[-1] / 7))
+print(date_32mil)
+days_until_30apr = (pd.Timestamp(year=2021, month=4, day=30) - data_up_to).days
+weekly_rate_needed_32mil = (32_000_000 - total_doses) / days_until_30apr * 7
+
 ########## DASH
 
 external_stylesheets = ["https://use.typekit.net/dvr4nik.css"]#['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -136,6 +141,9 @@ Estimated population immunity due to vaccination: **{round(estimated_r_reduction
 
 At the current rate, 15M doses will be reached on **{date_15mil.strftime('%B %d, %Y')}** (target Feb 15)  
 To meet the target, we need to average **{summarize(weekly_rate_needed_15mil)} doses/week**
+                 
+At the current rate, 32M doses will be reached on **{date_32mil.strftime('%B %d, %Y')}** (target Apr 30 - end of phase 1)  
+To meet the target, we need to average **{summarize(weekly_rate_needed_32mil)} doses/week**
 
 #### Doses per capita
 England: **{summarize(doses_per_capita_england)}**  
