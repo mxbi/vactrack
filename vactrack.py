@@ -139,10 +139,9 @@ Last week: **{summarize(weekly_rates.values[-1])}** doses/week
 
 Estimated population immunity due to vaccination: **{round(estimated_r_reduction*100, 2)}%** (crude)
 
-At the current rate, 15M doses will be reached on **{date_15mil.strftime('%B %d, %Y')}** (target Feb 15)  
-To meet the target, we need to average **{summarize(weekly_rate_needed_15mil)} doses/week**
+The target of 15M doses was met on **February 12th, 2021**. 🎉
                  
-At the current rate, 32M doses will be reached on **{date_32mil.strftime('%B %d, %Y')}** (target Apr 30 - end of phase 1)  
+At the current rate, 32M doses will be reached on **{date_32mil.strftime('%B %d, %Y')}** (target Apr 30 - all over 50s)  
 To meet the target, we need to average **{summarize(weekly_rate_needed_32mil)} doses/week**
 
 #### Doses per capita
