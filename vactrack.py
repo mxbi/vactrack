@@ -62,14 +62,14 @@ doses_per_capita_ni = doses_ni / NI_POPULATION
 
 estimated_r_reduction = (total_first_doses * ONE_DOSE_IMMUNITY + total_second_doses * TWO_DOSE_IMMUNITY) / UK_POPULATION
 
-print(doses_england)
+# print(doses_england)
 
 cumdoses_by_date = data.groupby('date')[[_first, _second]].sum().sum(axis=1)
 people_by_date = data.groupby('date')[_first].sum()
-print(cumdoses_by_date)
+# print(cumdoses_by_date)
 
 # print(cumdoses_by_date.index.to_series())
-print(cumdoses_by_date.index)
+# print(cumdoses_by_date.index)
 
 cumdoses = cumdoses_by_date.resample('D').interpolate('slinear')
 daily_rates = cumdoses.diff(1)
@@ -89,10 +89,55 @@ print(date_32mil)
 days_until_30apr = (pd.Timestamp(year=2021, month=4, day=30) - data_up_to).days
 weekly_rate_needed_32mil = (32_000_000 - total_doses) / days_until_30apr * 7
 
+########## Modelling
+
+cum_firstdoses_by_date = data.groupby('date')[_first].sum(axis=1).resample('D').interpolate('slinear')
+cum_seconddoses_by_date = data.groupby('date')[_second].sum(axis=1).resample('D').interpolate('slinear')
+dose_offset = 11*7+3 # 11.5 weeks between doses
+# print(cum_firstdoses_by_date)
+daily_rate = weekly_rates[-1] / 7
+print(daily_rate)
+
+def model_cumdoses(daily_rate, daily_rate_factor):
+    model_daterange = pd.date_range(start=cum_firstdoses_by_date.index.min(), end='2021-12-01')
+
+    model_first = []
+    model_second = []
+    for date in model_daterange:
+        # If we have data, we just reuse that data
+        if date in cum_firstdoses_by_date.index:
+            model_first.append(cum_firstdoses_by_date[date])
+            model_second.append(cum_seconddoses_by_date[date])
+        
+        else:
+            # Otherwise we model
+            model_cum_second = model_second[-1]
+            model_min_second = model_first[-dose_offset] if len(model_first) > dose_offset else 0
+            model_daily_second = max(model_min_second - model_cum_second, 0)
+
+            # Assume 2nd dose recipients are ONLY those who need it
+            model_second.append(model_cum_second + model_daily_second)
+            model_daily_first = daily_rate - model_daily_second
+            if model_daily_first < 0:
+                # AHHH
+                print('[ERROR] Not enough 2nd doses on {}!'.format(date))
+
+            model_first.append(model_first[-1] + model_daily_first)
+            daily_rate *= daily_rate_factor
+
+    df = pd.DataFrame()
+    df['date'] = model_daterange
+    df['first'] = model_first
+    df['second'] = model_second
+    return df
+
+model_constant = model_cumdoses(daily_rate, 1)
+model_increase = model_cumdoses(daily_rate, 1.007)
+
 ########## DASH
 
 external_stylesheets = ["https://use.typekit.net/dvr4nik.css"]#['https://codepen.io/chriddyp/pen/bWLwgP.css']
-external_scripts =[{'async': True, 'data-domain': "vaccine.mxbi.net", "defer": "defer", "src": "https://stats.mxbi.net/js/plausible.js"}]# ["https://use.typekit.net/dvr4nik.css"]
+external_scripts =[{'async': True, 'data-domain': "vaccine.mxbi.net", "defer": "defer", "src": "https://stats.mxbi.net/js/pla.js"}]# ["https://use.typekit.net/dvr4nik.css"]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, external_scripts=external_scripts)
 server = app.server
@@ -113,6 +158,28 @@ fig_rate.add_trace(go.Scatter(x=weekly_rates.index, y=weekly_rates.values, name=
 fig_rate.update_layout(title="Vaccination rate", xaxis_title="Date", yaxis_title="Doses/week", font=dict(size=15, family="nimbus-sans"), legend_title_text="Calculated over")
 fig_rate.update_yaxes(range=[0, daily_rates.max() * 7 * 1.05])
 # fig_rate.add_scatter(x=weekly_rates.index, y=weekly_rates.values, mode='lines', name="Weekly")
+
+fig_model = go.Figure()
+fig_model.add_trace(go.Scatter(x=model_constant.date, y=cum_firstdoses_by_date, name="First doses", line=dict(color="#636EFA")))
+fig_model.add_trace(go.Scatter(x=model_constant.date, y=cum_seconddoses_by_date, name="Second doses", line=dict(color="#00CC96")))
+fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant['first'], name="First (modelled)", line=dict(dash="dash", color="#636EFA")))
+fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant.second, name="Second (modelled)", line=dict(dash="dash", color="#00CC96")))
+fig_model.update_layout(title="Assuming supply is constant", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"))
+fig_model.add_shape(type='line', x0=model_constant.date.min(), x1=model_constant.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
+fig_model.add_shape(type='line', x0=model_constant.date.min(), x1=model_constant.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
+fig_model.update_yaxes(range=[0, 50000000])
+fig_model.update_xaxes(dtick="M1")
+
+fig_model2 = go.Figure()
+fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_firstdoses_by_date, name="First doses", line=dict(color="#636EFA")))
+fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_seconddoses_by_date, name="Second doses", line=dict(color="#00CC96")))
+fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase['first'], name="First (modelled)", line=dict(dash="dash", color="#636EFA")))
+fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase.second, name="Second (modelled)", line=dict(dash="dash", color="#00CC96")))
+fig_model2.update_layout(title="Assuming 5% weekly rate increase", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"))
+fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
+fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
+fig_model2.update_yaxes(range=[0, 50000000])
+fig_model2.update_xaxes(dtick="M1")
 
 app.layout = html.Div(children=[
     # html.Script(**{'async': True, 'data-domain': "vaccine.mxbi.net", "defer": "defer", "src": "https://stats.mxbi.net/js/plausible.js"}),
@@ -142,15 +209,21 @@ Northern Ireland: **{summarize(doses_per_capita_ni)}**
     ]),
 
     html.Div([
-        html.Div([
-            dcc.Graph(
-                id='example-graph',
-                figure=fig_doses
-            )
-        ], className="six columns"),
-
+        html.Div([dcc.Graph(id='example-graph',figure=fig_doses)], className="six columns"),
         html.Div([dcc.Graph(id='graph2',figure=fig_rate)], className="six columns")
     ], className="row"),
+
+    html.Hr(),
+
+    dcc.Markdown("""
+    ### Modelling of future dose rollout
+    """),
+
+    html.Div([
+        html.Div([dcc.Graph(id='modelled-graph', figure=fig_model)], className="six columns"),
+        html.Div([dcc.Graph(id='modelled-graph2', figure=fig_model2)], className="six columns")
+    ], className="row"),
+    # dcc.Graph(id='modelled-graph', figure=fig_model),
 
     html.I(["Data up to {}. Data generally updates every day after 4pm.".format(data_up_to)]),
     html.Br(),
