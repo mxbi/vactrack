@@ -91,9 +91,11 @@ weekly_rate_needed_32mil = (32_000_000 - total_doses) / days_until_30apr * 7
 
 ########## Modelling
 
-cum_firstdoses_by_date = data.groupby('date')[_first].sum(axis=1).resample('D').interpolate('slinear')
-cum_seconddoses_by_date = data.groupby('date')[_second].sum(axis=1).resample('D').interpolate('slinear')
+print(data.groupby('date')[_first])
+cum_firstdoses_by_date = data.groupby('date')[[_first]].sum().sum(axis=1).resample('D').interpolate('slinear')
+cum_seconddoses_by_date = data.groupby('date')[[_second]].sum().sum(axis=1).resample('D').interpolate('slinear')
 dose_offset = 11*7+3 # 11.5 weeks between doses
+target = 52_100_000
 # print(cum_firstdoses_by_date)
 daily_rate = weekly_rates[-1] / 7
 print(daily_rate)
@@ -113,11 +115,11 @@ def model_cumdoses(daily_rate, daily_rate_factor):
             # Otherwise we model
             model_cum_second = model_second[-1]
             model_min_second = model_first[-dose_offset] if len(model_first) > dose_offset else 0
-            model_daily_second = max(model_min_second - model_cum_second, 0)
+            model_daily_second = max(model_min_second - model_cum_second, 0) if model_first[-1] < target else daily_rate
 
             # Assume 2nd dose recipients are ONLY those who need it
             model_second.append(model_cum_second + model_daily_second)
-            model_daily_first = daily_rate - model_daily_second
+            model_daily_first = daily_rate - model_daily_second if model_first[-1] < target else 0
             if model_daily_first < 0:
                 # AHHH
                 print('[ERROR] Not enough 2nd doses on {}!'.format(date))
@@ -167,7 +169,7 @@ fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant.second, n
 fig_model.update_layout(title="Assuming supply is constant", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"))
 fig_model.add_shape(type='line', x0=model_constant.date.min(), x1=model_constant.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
 fig_model.add_shape(type='line', x0=model_constant.date.min(), x1=model_constant.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
-fig_model.update_yaxes(range=[0, 50000000])
+fig_model.update_yaxes(range=[0, 52000000])
 fig_model.update_xaxes(dtick="M1")
 
 fig_model2 = go.Figure()
@@ -178,7 +180,7 @@ fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase.second, 
 fig_model2.update_layout(title="Assuming 5% weekly rate increase", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"))
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
-fig_model2.update_yaxes(range=[0, 50000000])
+fig_model2.update_yaxes(range=[0, 52000000])
 fig_model2.update_xaxes(dtick="M1")
 
 app.layout = html.Div(children=[
