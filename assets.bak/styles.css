@@ -35,7 +35,7 @@
 
 /* Grid
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
-.container {
+/* .container {
   position: relative;
   width: 100%;
   max-width: 960px;
@@ -117,7 +117,7 @@
   .offset-by-one-half.column,
   .offset-by-one-half.columns     { margin-left: 52%; }
 
-}
+} */
 
 
 /* Base Styles

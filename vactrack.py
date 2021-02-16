@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 import requests
 import scipy
+import dash_bootstrap_components as dbc
+
 
 def summarize(n):
     if n > 1_000_000:
@@ -134,11 +136,11 @@ def model_cumdoses(daily_rate, daily_rate_factor):
     return df
 
 model_constant = model_cumdoses(daily_rate, 1)
-model_increase = model_cumdoses(daily_rate, 1.007)
+model_increase = model_cumdoses(daily_rate, 1.0043)
 
 ########## DASH
 
-external_stylesheets = ["https://use.typekit.net/dvr4nik.css"]#['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ["https://use.typekit.net/dvr4nik.css", dbc.themes.BOOTSTRAP]#['https://codepen.io/chriddyp/pen/bWLwgP.css']
 external_scripts =[{'async': True, 'data-domain': "vaccine.mxbi.net", "defer": "defer", "src": "https://stats.mxbi.net/js/pla.js"}]# ["https://use.typekit.net/dvr4nik.css"]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, external_scripts=external_scripts)
@@ -164,8 +166,8 @@ fig_rate.update_yaxes(range=[0, daily_rates.max() * 7 * 1.05])
 fig_model = go.Figure()
 fig_model.add_trace(go.Scatter(x=model_constant.date, y=cum_firstdoses_by_date, name="First doses", line=dict(color="#636EFA")))
 fig_model.add_trace(go.Scatter(x=model_constant.date, y=cum_seconddoses_by_date, name="Second doses", line=dict(color="#00CC96")))
-fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant['first'], name="First (modelled)", line=dict(dash="dash", color="#636EFA")))
-fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant.second, name="Second (modelled)", line=dict(dash="dash", color="#00CC96")))
+fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant['first'], name="First (model)", line=dict(dash="dash", color="#636EFA")))
+fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant.second, name="Second (model)", line=dict(dash="dash", color="#00CC96")))
 fig_model.update_layout(title="Assuming supply is constant", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"))
 fig_model.add_shape(type='line', x0=model_constant.date.min(), x1=model_constant.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
 fig_model.add_shape(type='line', x0=model_constant.date.min(), x1=model_constant.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
@@ -175,20 +177,22 @@ fig_model.update_xaxes(dtick="M1")
 fig_model2 = go.Figure()
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_firstdoses_by_date, name="First doses", line=dict(color="#636EFA")))
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_seconddoses_by_date, name="Second doses", line=dict(color="#00CC96")))
-fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase['first'], name="First (modelled)", line=dict(dash="dash", color="#636EFA")))
-fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase.second, name="Second (modelled)", line=dict(dash="dash", color="#00CC96")))
-fig_model2.update_layout(title="Assuming 5% weekly rate increase", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"))
+fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase['first'], name="First (model)", line=dict(dash="dash", color="#636EFA")))
+fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase.second, name="Second (model)", line=dict(dash="dash", color="#00CC96")))
+fig_model2.update_layout(title="Assuming 3% weekly rate increase", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"))
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
 fig_model2.update_yaxes(range=[0, 52000000])
 fig_model2.update_xaxes(dtick="M1")
 
 app.layout = html.Div(children=[
+    # dbc.NavbarSimple(brand="CovidTrack | Vaccine Rollout", dark=True, color="dark", expand=True),
+    # html.H1("CovidTrack | Vaccine Rollout"),
+    html.Div([
     # html.Script(**{'async': True, 'data-domain': "vaccine.mxbi.net", "defer": "defer", "src": "https://stats.mxbi.net/js/plausible.js"}),
     html.Div(children=[
     dcc.Markdown(f"""
 # CovidTrack | Vaccine Rollout
-
 **{summarize(total_doses)}** doses given in total, to **{summarize(total_first_doses)}** people.
 
 #### Current rate of vaccination
@@ -211,26 +215,30 @@ Northern Ireland: **{summarize(doses_per_capita_ni)}**
     ]),
 
     html.Div([
-        html.Div([dcc.Graph(id='example-graph',figure=fig_doses)], className="six columns"),
-        html.Div([dcc.Graph(id='graph2',figure=fig_rate)], className="six columns")
-    ], className="row"),
+        html.Div([
+            html.Div([dcc.Graph(id='example-graph',figure=fig_doses)], className="col-xl-6"),
+            html.Div([dcc.Graph(id='graph2',figure=fig_rate)], className="col-xl-6")
+        ], className="row"),
+    ], className='container-fluid'),
 
     html.Hr(),
 
     dcc.Markdown("""
-    ### Modelling of future dose rollout
+    ### Modelling
     """),
 
     html.Div([
-        html.Div([dcc.Graph(id='modelled-graph', figure=fig_model)], className="six columns"),
-        html.Div([dcc.Graph(id='modelled-graph2', figure=fig_model2)], className="six columns")
-    ], className="row"),
-    # dcc.Graph(id='modelled-graph', figure=fig_model),
+        html.Div([
+                html.Div([dcc.Graph(id='modelled-graph', figure=fig_model)], className="col-xl-6"),
+                html.Div([dcc.Graph(id='modelled-graph2', figure=fig_model2)], className="col-xl-6")
+        ], className="row"),
+    ], className="container-fluid"),
 
     html.I(["Data up to {}. Data generally updates every day after 4pm.".format(data_up_to)]),
     html.Br(),
     dcc.Markdown("Made by [Mikel Bober-Irizar](https://twitter.com/mikb0b). Data from [UK Coronavirus Dashboard](https://coronavirus.data.gov.uk/details/vaccinations)"),
-],  style={"margin-left": "2em", "margin-right": "2em"})
+    ], style={"margin-left": "2em", "margin-right": "2em", "margin-top": "1em", "font-family": '"nimbus-sans", sans-serif !important'})
+])
 
 if __name__ == '__main__':
     app.run_server(debug=True)
