@@ -154,15 +154,15 @@ fig_doses = go.Figure()
 fig_doses.add_trace(go.Scatter(x=cumdoses_by_date.index, y=cumdoses_by_date, name='Doses'))
 fig_doses.add_trace(go.Scatter(x=people_by_date.index, y=people_by_date.values, name='People'))
 fig_doses.data[0].update(mode='markers+lines')
-
-fig_doses.update_layout(title="Total doses given in UK", xaxis_title="Date", yaxis_title="Cumulative doses", font=dict(size=15, family="nimbus-sans"))
+fig_doses.update_layout(title="Total doses given in UK", xaxis_title="Date", yaxis_title="Cumulative doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
 
 # fig_rate = px.scatter(daily_rates*7, mode='lines', name="Daily")
 fig_rate = go.Figure()
 fig_rate.add_trace(go.Scatter(x=daily_rates.index, y=daily_rates.values*7, name="1 day rate", line=dict(dash="dash")))
 fig_rate.add_trace(go.Scatter(x=weekly_rates.index, y=weekly_rates.values, name="1 week rate"))
-fig_rate.update_layout(title="Vaccination rate", xaxis_title="Date", yaxis_title="Doses/week", font=dict(size=15, family="nimbus-sans"), legend_title_text="Calculated over")
+fig_rate.update_layout(title="Vaccination rate", xaxis_title="Date", yaxis_title="Doses/week", font=dict(size=15, family="nimbus-sans"), legend_title_text="Calculated over", margin=dict(l=0, r=0, t=50, b=0))
 fig_rate.update_yaxes(range=[0, daily_rates.max() * 7 * 1.05])
+
 # fig_rate.add_scatter(x=weekly_rates.index, y=weekly_rates.values, mode='lines', name="Weekly")
 
 fig_model = go.Figure()
@@ -170,7 +170,7 @@ fig_model.add_trace(go.Scatter(x=model_constant.date, y=cum_firstdoses_by_date, 
 fig_model.add_trace(go.Scatter(x=model_constant.date, y=cum_seconddoses_by_date, name="Second doses", line=dict(color="#00CC96")))
 fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant['first'], name="First (model)", line=dict(dash="dash", color="#636EFA")))
 fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant.second, name="Second (model)", line=dict(dash="dash", color="#00CC96")))
-fig_model.update_layout(title="Assuming supply is constant", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"))
+fig_model.update_layout(title="Assuming supply is constant", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
 fig_model.add_shape(type='line', x0=model_constant.date.min(), x1=model_constant.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
 fig_model.add_shape(type='line', x0=model_constant.date.min(), x1=model_constant.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
 fig_model.update_yaxes(range=[0, 52000000])
@@ -181,7 +181,7 @@ fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_firstdoses_by_date,
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_seconddoses_by_date, name="Second doses", line=dict(color="#00CC96")))
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase['first'], name="First (model)", line=dict(dash="dash", color="#636EFA")))
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase.second, name="Second (model)", line=dict(dash="dash", color="#00CC96")))
-fig_model2.update_layout(title="Assuming 3% weekly rate increase", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"))
+fig_model2.update_layout(title="Assuming 3% weekly rate increase", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
 fig_model2.update_yaxes(range=[0, 52000000])
@@ -209,10 +209,7 @@ At the current rate, 32M doses will be reached on **{date_32mil.strftime('%B %d,
 To meet the target, we need to average **{summarize(weekly_rate_needed_32mil)} doses/week**
 
 #### Doses per capita
-England: **{summarize(doses_per_capita_england)}**  
-Scotland: **{summarize(doses_per_capita_scotland)}**  
-Wales: **{summarize(doses_per_capita_wales)}**  
-Northern Ireland: **{summarize(doses_per_capita_ni)}**  
+England: **{summarize(doses_per_capita_england)}** | Scotland: **{summarize(doses_per_capita_scotland)}**  | Wales: **{summarize(doses_per_capita_wales)}** | NI: **{summarize(doses_per_capita_ni)}**  
     """),
     ]),
 
