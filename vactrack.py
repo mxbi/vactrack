@@ -103,7 +103,7 @@ daily_rate = weekly_rates[-1] / 7
 print(daily_rate)
 
 def model_cumdoses(daily_rate, daily_rate_factor):
-    model_daterange = pd.date_range(start=cum_firstdoses_by_date.index.min(), end='2021-12-01')
+    model_daterange = pd.date_range(start=cum_firstdoses_by_date.index.min(), end='2021-10-01')
 
     model_first = []
     model_second = []
@@ -118,6 +118,8 @@ def model_cumdoses(daily_rate, daily_rate_factor):
             model_cum_second = model_second[-1]
             model_min_second = model_first[-dose_offset] if len(model_first) > dose_offset else 0
             model_daily_second = max(model_min_second - model_cum_second, 0) if model_first[-1] < target else daily_rate
+            if model_cum_second > target:
+                model_daily_second = 0
 
             # Assume 2nd dose recipients are ONLY those who need it
             model_second.append(model_cum_second + model_daily_second)
@@ -223,8 +225,12 @@ Northern Ireland: **{summarize(doses_per_capita_ni)}**
 
     html.Hr(),
 
-    dcc.Markdown("""
+    dcc.Markdown(f"""
     ### Modelling
+
+    Assuming supply **stays constant**, all adults will have their first dose by **{model_constant[model_constant['first'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**, and be fully vaccinated by **{model_constant[model_constant['second'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**  
+    Assuming supply **increases 3% every week**, all adults will have their first dose by **{model_increase[model_increase['first'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**, and be fully vaccinated by **{model_increase[model_increase['second'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**
+
     """),
 
     html.Div([
@@ -236,7 +242,7 @@ Northern Ireland: **{summarize(doses_per_capita_ni)}**
 
     html.I(["Data up to {}. Data generally updates every day after 4pm.".format(data_up_to)]),
     html.Br(),
-    dcc.Markdown("Made by [Mikel Bober-Irizar](https://twitter.com/mikb0b). Data from [UK Coronavirus Dashboard](https://coronavirus.data.gov.uk/details/vaccinations)"),
+    dcc.Markdown("**Made by [Mikel Bober-Irizar](https://twitter.com/mikb0b)**. Data from [UK Coronavirus Dashboard](https://coronavirus.data.gov.uk/details/vaccinations)"),
     ], style={"margin-left": "2em", "margin-right": "2em", "margin-top": "1em", "font-family": '"nimbus-sans", sans-serif !important'})
 ])
 
