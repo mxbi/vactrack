@@ -131,6 +131,10 @@ def model_cumdoses(daily_rate, daily_rate_factor):
             model_first.append(model_first[-1] + model_daily_first)
             daily_rate *= daily_rate_factor
 
+    # Make sure that first doses are monotonically increasing (remove where second doses later "borrow from first doses")
+    for i in range(len(model_first)):
+        model_first[i] = np.min(model_first[i:])
+
     df = pd.DataFrame()
     df['date'] = model_daterange
     df['first'] = model_first
