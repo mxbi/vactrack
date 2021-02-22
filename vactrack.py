@@ -201,6 +201,8 @@ app.layout = html.Div(children=[
 # CovidTrack | Vaccine Rollout
 **{summarize(total_doses)}** doses given in total, to **{summarize(total_first_doses)}** people.
 
+**[See also: R rate tracker](http://mb2345.user.srcf.net/covidtrack/)**
+
 #### Current rate of vaccination
 Last day:  **{summarize(daily_rates.values[-1])}** doses/day ({summarize(daily_rates.values[-1] * 7)} doses/week)  
 Last week: **{summarize(weekly_rates.values[-1])}** doses/week
