@@ -68,6 +68,7 @@ estimated_r_reduction = (total_first_doses * ONE_DOSE_IMMUNITY + total_second_do
 
 cumdoses_by_date = data.groupby('date')[[_first, _second]].sum().sum(axis=1)
 people_by_date = data.groupby('date')[_first].sum()
+second_doses_by_date = data.groupby('date')[_second].sum()
 # print(cumdoses_by_date)
 
 # print(cumdoses_by_date.index.to_series())
@@ -88,8 +89,8 @@ weekly_rate_needed_15mil = (15_000_000 - total_doses) / days_until_15feb * 7
 
 date_32mil = data_up_to + pd.Timedelta(days=(32_000_000 - total_doses) / (weekly_rates.values[-1] / 7))
 print(date_32mil)
-days_until_30apr = (pd.Timestamp(year=2021, month=4, day=30) - data_up_to).days
-weekly_rate_needed_32mil = (32_000_000 - total_doses) / days_until_30apr * 7
+days_until_15apr = (pd.Timestamp(year=2021, month=4, day=15) - data_up_to).days
+weekly_rate_needed_32mil = (32_000_000 - total_doses) / days_until_15apr * 7
 
 ########## Modelling
 
@@ -102,12 +103,15 @@ target = 52_100_000
 daily_rate = weekly_rates[-1] / 7
 print(daily_rate)
 
-def model_cumdoses(daily_rate, daily_rate_factor):
+def model_cumdoses(daily_rate, daily_rate_factor, daily_rate_func):
     model_daterange = pd.date_range(start=cum_firstdoses_by_date.index.min(), end='2021-11-01')
 
     model_first = []
     model_second = []
     for date in model_daterange:
+        if daily_rate_func:
+            daily_rate = daily_rate_func(date)
+
         # If we have data, we just reuse that data
         if date in cum_firstdoses_by_date.index:
             model_first.append(cum_firstdoses_by_date[date])
@@ -141,8 +145,13 @@ def model_cumdoses(daily_rate, daily_rate_factor):
     df['second'] = model_second
     return df
 
-model_constant = model_cumdoses(daily_rate, 1)
-model_increase = model_cumdoses(daily_rate, 1.0043)
+def cabinet_office(date):
+    if date < pd.Timestamp(year=2021, month=4, day=25):
+        return 2_400_000 // 7
+    return 3_900_000 // 7
+
+model_constant = model_cumdoses(daily_rate, 1, False)
+model_increase = model_cumdoses(None, 1, cabinet_office)
 
 ########## DASH
 
@@ -155,10 +164,12 @@ server = app.server
 # fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
 # fig_doses = px.line(cumdoses_by_date, name='Total')
 fig_doses = go.Figure()
-fig_doses.add_trace(go.Scatter(x=cumdoses_by_date.index, y=cumdoses_by_date, name='Doses'))
-fig_doses.add_trace(go.Scatter(x=people_by_date.index, y=people_by_date.values, name='People'))
-fig_doses.data[0].update(mode='markers+lines')
+fig_doses.add_trace(go.Scatter(x=cumdoses_by_date.index, y=cumdoses_by_date, name='Total doses'))
+fig_doses.add_trace(go.Scatter(x=people_by_date.index, y=people_by_date.values, name='1st doses'))
+fig_doses.add_trace(go.Scatter(x=second_doses_by_date.index, y=second_doses_by_date.values, name='2nd doses'))
+# fig_doses.data[0].update(mode='markers+lines')
 fig_doses.update_layout(title="Total doses given in UK", xaxis_title="Date", yaxis_title="Cumulative doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
+fig_doses.update_yaxes(range=[0, cumdoses_by_date.max() * 1.05])
 
 # fig_rate = px.scatter(daily_rates*7, mode='lines', name="Daily")
 fig_rate = go.Figure()
@@ -185,7 +196,7 @@ fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_firstdoses_by_date,
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_seconddoses_by_date, name="Second doses", line=dict(color="#00CC96")))
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase['first'], name="First (model)", line=dict(dash="dash", color="#636EFA")))
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase.second, name="Second (model)", line=dict(dash="dash", color="#00CC96")))
-fig_model2.update_layout(title="Assuming 3% weekly rate increase", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
+fig_model2.update_layout(title="Internal Cabinet Office Scenario", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
 fig_model2.update_yaxes(range=[0, 52000000])
@@ -211,7 +222,7 @@ Estimated population immunity due to vaccination: **{round(estimated_r_reduction
 
 The target of 15M doses was met on **February 12th, 2021**. 🎉
                  
-At the current rate, 32M doses will be reached on **{date_32mil.strftime('%B %d, %Y')}** (target Apr 30 - all over 50s)  
+At the current rate, 32M doses will be reached on **{date_32mil.strftime('%B %d, %Y')}** (target Apr 15 - all over 50s)  
 To meet the target, we need to average **{summarize(weekly_rate_needed_32mil)} doses/week**
 
 #### Doses per capita
@@ -232,7 +243,7 @@ England: **{summarize(doses_per_capita_england)}** | Scotland: **{summarize(dose
     ### Modelling
 
     Assuming supply **stays constant**, all adults will have their first dose by **{model_constant[model_constant['first'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**, and be fully vaccinated by **{model_constant[model_constant['second'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**  
-    Assuming supply **increases 3% every week**, all adults will have their first dose by **{model_increase[model_increase['first'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**, and be fully vaccinated by **{model_increase[model_increase['second'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**
+    Assuming the **Cabinet Office internal planning scenario**, all adults will have their first dose by **{model_increase[model_increase['first'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**, and be fully vaccinated by **{model_increase[model_increase['second'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**
 
     """),
 
