@@ -104,7 +104,7 @@ daily_rate = weekly_rates[-1] / 7
 print(daily_rate)
 
 def model_cumdoses(daily_rate, daily_rate_factor, daily_rate_func):
-    model_daterange = pd.date_range(start=cum_firstdoses_by_date.index.min(), end='2021-11-01')
+    model_daterange = pd.date_range(start=cum_firstdoses_by_date.index.min(), end='2021-12-01')
 
     model_first = []
     model_second = []
