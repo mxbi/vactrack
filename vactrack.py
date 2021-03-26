@@ -87,10 +87,10 @@ print(date_15mil)
 days_until_15feb = (pd.Timestamp(year=2021, month=2, day=16) - data_up_to).days
 weekly_rate_needed_15mil = (15_000_000 - total_doses) / days_until_15feb * 7
 
-date_32mil = data_up_to + pd.Timedelta(days=(32_000_000 - total_doses) / (weekly_rates.values[-1] / 7))
-print(date_32mil)
+date_36mil = data_up_to + pd.Timedelta(days=(36_000_000 - total_doses) / (weekly_rates.values[-1] / 7))
+print(date_36mil)
 days_until_15apr = (pd.Timestamp(year=2021, month=4, day=15) - data_up_to).days
-weekly_rate_needed_32mil = (32_000_000 - total_doses) / days_until_15apr * 7
+weekly_rate_needed_36mil = (36_000_000 - total_doses) / days_until_15apr * 7
 
 ########## Modelling
 
@@ -222,8 +222,8 @@ Estimated population immunity due to vaccination: **{round(estimated_r_reduction
 
 The target of 15M doses was met on **February 12th, 2021**. 🎉
                  
-At the current rate, 32M doses will be reached on **{date_32mil.strftime('%B %d, %Y')}** (target Apr 15 - all over 50s)  
-To meet the target, we need to average **{summarize(weekly_rate_needed_32mil)} doses/week**
+At the current rate, 36M doses will be reached on **{date_36mil.strftime('%B %d, %Y')}** (target Apr 15 - all over 50s)  
+To meet the target, we need to average **{summarize(weekly_rate_needed_36mil)} doses/week**
 
 #### Doses per capita
 England: **{summarize(doses_per_capita_england)}** | Scotland: **{summarize(doses_per_capita_scotland)}**  | Wales: **{summarize(doses_per_capita_wales)}** | NI: **{summarize(doses_per_capita_ni)}**  
