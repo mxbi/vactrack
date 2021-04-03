@@ -69,6 +69,7 @@ estimated_r_reduction = (total_first_doses * ONE_DOSE_IMMUNITY + total_second_do
 cumdoses_by_date = data.groupby('date')[[_first, _second]].sum().sum(axis=1)
 people_by_date = data.groupby('date')[_first].sum()
 second_doses_by_date = data.groupby('date')[_second].sum()
+first_doses_by_date = data.groupby('date')[_first].sum()
 # print(cumdoses_by_date)
 
 # print(cumdoses_by_date.index.to_series())
@@ -77,6 +78,10 @@ second_doses_by_date = data.groupby('date')[_second].sum()
 cumdoses = cumdoses_by_date.resample('D').interpolate('slinear')
 daily_rates = cumdoses.diff(1)
 weekly_rates = cumdoses.diff(7)
+
+cumfirstdoses = first_doses_by_date.resample('D').interpolate('slinear')
+weekly_first_rates = cumfirstdoses.diff(7)
+weekly_first_rates.iloc[:8] = np.linspace(0, weekly_first_rates.iloc[7], 8)
 
 daily_rates = daily_rates[daily_rates.index >= pd.Timestamp(year=2021, month=1, day=10)] # Only valid after daily data starts being published
 # Need to correct initial NaNs
@@ -175,6 +180,7 @@ fig_doses.update_yaxes(range=[0, cumdoses_by_date.max() * 1.05])
 fig_rate = go.Figure()
 fig_rate.add_trace(go.Scatter(x=daily_rates.index, y=daily_rates.values*7, name="1 day rate", line=dict(dash="dash")))
 fig_rate.add_trace(go.Scatter(x=weekly_rates.index, y=weekly_rates.values, name="1 week rate"))
+fig_rate.add_trace(go.Scatter(x=weekly_first_rates.index, y=weekly_first_rates.values, name="1 week first doses", line=dict(color="rgba(32, 201, 151, 0.2)")))
 fig_rate.update_layout(title="Vaccination rate", xaxis_title="Date", yaxis_title="Doses/week", font=dict(size=15, family="nimbus-sans"), legend_title_text="Calculated over", margin=dict(l=0, r=0, t=50, b=0))
 fig_rate.update_yaxes(range=[0, daily_rates.max() * 7 * 1.05])
 
@@ -218,12 +224,10 @@ app.layout = html.Div(children=[
 Last day:  **{summarize(daily_rates.values[-1])}** doses/day ({summarize(daily_rates.values[-1] * 7)} doses/week)  
 Last week: **{summarize(weekly_rates.values[-1])}** doses/week
 
-Estimated population immunity due to vaccination: **{round(estimated_r_reduction*100, 2)}%** (crude)
+Estimated population immunity due to vaccination: **{round(estimated_r_reduction*100, 1)}%** (crude)
 
-The target of 15M doses was met on **February 12th, 2021**. 🎉
-                 
-At the current rate, 36M doses will be reached on **{date_36mil.strftime('%B %d, %Y')}** (target Apr 15 - all over 50s)  
-To meet the target, we need to average **{summarize(weekly_rate_needed_36mil)} doses/week**
+The target of 15M doses was met on **February 12th, 2021**. 🎉  
+The target of 36M doses was met on **April 1st, 2021**. 🎉  
 
 #### Doses per capita
 England: **{summarize(doses_per_capita_england)}** | Scotland: **{summarize(doses_per_capita_scotland)}**  | Wales: **{summarize(doses_per_capita_wales)}** | NI: **{summarize(doses_per_capita_ni)}**  
