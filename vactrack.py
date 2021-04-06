@@ -151,9 +151,9 @@ def model_cumdoses(daily_rate, daily_rate_factor, daily_rate_func):
     return df
 
 def cabinet_office(date):
-    if date < pd.Timestamp(year=2021, month=4, day=25):
-        return 2_400_000 // 7
-    return 3_900_000 // 7
+    if date < pd.Timestamp(year=2021, month=7, day=31):
+        return 2_700_000 // 7
+    return 2_000_000 // 7
 
 model_constant = model_cumdoses(daily_rate, 1, False)
 model_increase = model_cumdoses(None, 1, cabinet_office)
@@ -202,7 +202,7 @@ fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_firstdoses_by_date,
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_seconddoses_by_date, name="Second doses", line=dict(color="#00CC96")))
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase['first'], name="First (model)", line=dict(dash="dash", color="#636EFA")))
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase.second, name="Second (model)", line=dict(dash="dash", color="#00CC96")))
-fig_model2.update_layout(title="Internal Cabinet Office Scenario", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
+fig_model2.update_layout(title="Cabinet Office Modelling Scenario (as of 31st March)", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
 fig_model2.update_yaxes(range=[0, 52000000])
