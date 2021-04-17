@@ -216,7 +216,7 @@ app.layout = html.Div(children=[
     html.Div(children=[
     dcc.Markdown(f"""
 # CovidTrack | Vaccine Rollout
-**{summarize(total_doses)}** doses given in total, to **{summarize(total_first_doses)}** people.
+**{summarize(total_doses)}** doses given in total, to **{summarize(total_first_doses)}** people. **{summarize(total_doses - total_first_doses)}** people have been fully vaccinated.
 
 **[See also: R rate tracker](http://mb2345.user.srcf.net/covidtrack/)**
 
