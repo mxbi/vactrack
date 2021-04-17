@@ -102,7 +102,7 @@ weekly_rate_needed_36mil = (36_000_000 - total_doses) / days_until_15apr * 7
 print(data.groupby('date')[_first])
 cum_firstdoses_by_date = data.groupby('date')[[_first]].sum().sum(axis=1).resample('D').interpolate('slinear')
 cum_seconddoses_by_date = data.groupby('date')[[_second]].sum().sum(axis=1).resample('D').interpolate('slinear')
-dose_offset = 11*7+3 # 11.5 weeks between doses
+dose_offset = 11*7 # 11 weeks between doses
 target = 52_100_000
 # print(cum_firstdoses_by_date)
 daily_rate = weekly_rates[-1] / 7
