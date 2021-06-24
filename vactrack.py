@@ -29,7 +29,7 @@ NI_POPULATION = 1_862_000
 UK_POPULATION = ENGLAND_POPULATION + SCOTLAND_POPULATION + WALES_POPULATION + NI_POPULATION
 
 ONE_DOSE_IMMUNITY = 0.45
-TWO_DOSE_IMMUNITY = 0.85
+TWO_DOSE_IMMUNITY = 0.80
 
 _first = 'cumPeopleVaccinatedFirstDoseByPublishDate'
 _second = 'cumPeopleVaccinatedSecondDoseByPublishDate'
@@ -62,7 +62,7 @@ doses_per_capita_scotland = doses_scotland / SCOTLAND_POPULATION
 doses_per_capita_wales = doses_wales / WALES_POPULATION
 doses_per_capita_ni = doses_ni / NI_POPULATION
 
-estimated_r_reduction = (total_first_doses * ONE_DOSE_IMMUNITY + total_second_doses * TWO_DOSE_IMMUNITY) / UK_POPULATION
+estimated_r_reduction = ((total_first_doses - total_second_doses) * ONE_DOSE_IMMUNITY + total_second_doses * TWO_DOSE_IMMUNITY) / UK_POPULATION
 
 # print(doses_england)
 
