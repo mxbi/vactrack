@@ -102,7 +102,7 @@ weekly_rate_needed_36mil = (36_000_000 - total_doses) / days_until_15apr * 7
 print(data.groupby('date')[_first])
 cum_firstdoses_by_date = data.groupby('date')[[_first]].sum().sum(axis=1).resample('D').interpolate('slinear')
 cum_seconddoses_by_date = data.groupby('date')[[_second]].sum().sum(axis=1).resample('D').interpolate('slinear')
-dose_offset = 11*7 # 11 weeks between doses
+dose_offset = 12*7 # 11 weeks between doses
 target = 52_100_000
 # print(cum_firstdoses_by_date)
 daily_rate = weekly_rates[-1] / 7
@@ -119,10 +119,12 @@ def model_cumdoses(daily_rate, daily_rate_factor, daily_rate_func):
 
         # If we have data, we just reuse that data
         if date in cum_firstdoses_by_date.index:
+            print(date, cum_firstdoses_by_date[date])
             model_first.append(cum_firstdoses_by_date[date])
             model_second.append(cum_seconddoses_by_date[date])
         
         else:
+            print('Imputing', date)
             # Otherwise we model
             model_cum_second = model_second[-1]
             model_min_second = model_first[-dose_offset] if len(model_first) > dose_offset else 0
@@ -141,8 +143,8 @@ def model_cumdoses(daily_rate, daily_rate_factor, daily_rate_func):
             daily_rate *= daily_rate_factor
 
     # Make sure that first doses are monotonically increasing (remove where second doses later "borrow from first doses")
-    for i in range(len(model_first)):
-        model_first[i] = np.min(model_first[i:])
+    # for i in range(len(model_first)):
+        # model_first[i] = np.min(model_first[i:])
 
     df = pd.DataFrame()
     df['date'] = model_daterange
@@ -157,6 +159,7 @@ def cabinet_office(date):
 
 model_constant = model_cumdoses(daily_rate, 1, False)
 model_increase = model_cumdoses(None, 1, cabinet_office)
+print(model_constant[280:])
 
 ########## DASH
 
@@ -243,18 +246,25 @@ England: **{summarize(doses_per_capita_england)}** | Scotland: **{summarize(dose
 
     html.Hr(),
 
+    # dcc.Markdown(f"""
+    # ### Modelling
+
+    # Assuming supply **stays constant**, all adults will have their first dose by **{model_constant[model_constant['first'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**, and be fully vaccinated by **{model_constant[model_constant['second'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**  
+    # Assuming the **Cabinet Office internal planning scenario**, all adults will have their first dose by **{model_increase[model_increase['first'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**, and be fully vaccinated by **{model_increase[model_increase['second'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**
+
+    # """),
+
     dcc.Markdown(f"""
     ### Modelling
-
-    Assuming supply **stays constant**, all adults will have their first dose by **{model_constant[model_constant['first'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**, and be fully vaccinated by **{model_constant[model_constant['second'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**  
-    Assuming the **Cabinet Office internal planning scenario**, all adults will have their first dose by **{model_increase[model_increase['first'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**, and be fully vaccinated by **{model_increase[model_increase['second'] > target]['date'].iloc[0].strftime('%B %d, %Y')}**
+     
+    All adults in the UK have been offered a dose! Which makes most of what used to be this section obsolete.
 
     """),
 
     html.Div([
         html.Div([
                 html.Div([dcc.Graph(id='modelled-graph', figure=fig_model)], className="col-xl-6"),
-                html.Div([dcc.Graph(id='modelled-graph2', figure=fig_model2)], className="col-xl-6")
+                # html.Div([dcc.Graph(id='modelled-graph2', figure=fig_model2)], className="col-xl-6")
         ], className="row"),
     ], className="container-fluid"),
 
