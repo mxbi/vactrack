@@ -252,7 +252,7 @@ app.layout = html.Div(children=[
     html.Div(children=[
     dcc.Markdown(f"""
 # CovidTrack | Vaccine Rollout
-**{summarize(total_doses)}** doses given in total, to **{summarize(total_first_doses)}** people. **{summarize(total_doses - total_first_doses)}** people have been fully vaccinated.
+**{summarize(total_doses)}** doses given in total, to **{summarize(total_first_doses)}** people. **{summarize(total_second_doses)}** people have been fully vaccinated.
 
 **{summarize(total_third_doses)}** people have been given a third dose.
 
