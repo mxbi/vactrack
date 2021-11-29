@@ -33,41 +33,46 @@ TWO_DOSE_IMMUNITY = 0.80
 
 _first = 'cumPeopleVaccinatedFirstDoseByPublishDate'
 _second = 'cumPeopleVaccinatedSecondDoseByPublishDate'
+_third = 'cumPeopleVaccinatedThirdInjectionByPublishDate'
 
 ########### DATA
 
-data = pd.read_csv("https://coronavirus.data.gov.uk/api/v1/data?filters=areaType=nation&structure=%7B%22areaType%22:%22areaType%22,%22areaName%22:%22areaName%22,%22areaCode%22:%22areaCode%22,%22date%22:%22date%22,%22cumPeopleVaccinatedFirstDoseByPublishDate%22:%22cumPeopleVaccinatedFirstDoseByPublishDate%22,%22cumPeopleVaccinatedSecondDoseByPublishDate%22:%22cumPeopleVaccinatedSecondDoseByPublishDate%22%7D&format=csv", 
+# data = pd.read_csv("https://coronavirus.data.gov.uk/api/v1/data?filters=areaType=nation&structure=%7B%22areaType%22:%22areaType%22,%22areaName%22:%22areaName%22,%22areaCode%22:%22areaCode%22,%22date%22:%22date%22,%22cumPeopleVaccinatedFirstDoseByPublishDate%22:%22cumPeopleVaccinatedFirstDoseByPublishDate%22,%22cumPeopleVaccinatedBoosterDoseByPublishDate,%22cumPeopleVaccinatedSecondDoseByPublishDate%22:%22cumPeopleVaccinatedSecondDoseByPublishDate%22%7D&format=csv", 
+data = pd.read_csv("https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&metric=cumPeopleVaccinatedFirstDoseByPublishDate&metric=cumPeopleVaccinatedSecondDoseByPublishDate&metric=cumPeopleVaccinatedThirdInjectionByPublishDate&format=csv",
                     parse_dates=['date'])
 data_old = pd.read_csv('data_2020.csv', parse_dates=['date'])
 data = pd.concat([data_old, data])
-print(data.head())
+# print(data.head())
 
 date_range = data['date'].unique()
 latest_date = date_range.max()
 latest = data[data.date == latest_date]
-print(latest_date)
+# print(latest_date)
 data_up_to = data['date'].max() + pd.Timedelta(days=1)
 
 total_first_doses = latest['cumPeopleVaccinatedFirstDoseByPublishDate'].sum()
 total_second_doses = latest['cumPeopleVaccinatedSecondDoseByPublishDate'].sum()
-total_doses = total_first_doses + total_second_doses
+total_third_doses = latest[_third].sum()
+total_doses = total_first_doses + total_second_doses + total_third_doses
 
-doses_england = latest.loc[latest.areaName == 'England', [_first, _second]].sum().sum()
-doses_scotland = latest.loc[latest.areaName == 'Scotland', [_first, _second]].sum().sum()
-doses_wales = latest.loc[latest.areaName == 'Wales', [_first, _second]].sum().sum()
-doses_ni = latest.loc[latest.areaName == 'Northern Ireland', [_first, _second]].sum().sum()
+doses_england = latest.loc[latest.areaName == 'England', [_first, _second, _third]].sum().sum()
+doses_scotland = latest.loc[latest.areaName == 'Scotland', [_first, _second, _third]].sum().sum()
+doses_wales = latest.loc[latest.areaName == 'Wales', [_first, _second, _third]].sum().sum()
+doses_ni = latest.loc[latest.areaName == 'Northern Ireland', [_first, _second, _third]].sum().sum()
 
 doses_per_capita_england = doses_england / ENGLAND_POPULATION
 doses_per_capita_scotland = doses_scotland / SCOTLAND_POPULATION
 doses_per_capita_wales = doses_wales / WALES_POPULATION
 doses_per_capita_ni = doses_ni / NI_POPULATION
 
+# TODO
 estimated_r_reduction = ((total_first_doses - total_second_doses) * ONE_DOSE_IMMUNITY + total_second_doses * TWO_DOSE_IMMUNITY) / UK_POPULATION
 
 # print(doses_england)
 
-cumdoses_by_date = data.groupby('date')[[_first, _second]].sum().sum(axis=1)
+cumdoses_by_date = data.groupby('date')[[_first, _second, _third]].sum().sum(axis=1)
 people_by_date = data.groupby('date')[_first].sum()
+third_doses_by_date = data.groupby('date')[_third].sum()
 second_doses_by_date = data.groupby('date')[_second].sum()
 first_doses_by_date = data.groupby('date')[_first].sum()
 # print(cumdoses_by_date)
@@ -83,33 +88,52 @@ cumfirstdoses = first_doses_by_date.resample('D').interpolate('slinear')
 weekly_first_rates = cumfirstdoses.diff(7)
 weekly_first_rates.iloc[:8] = np.linspace(0, weekly_first_rates.iloc[7], 8)
 
+cumthirddoses = third_doses_by_date.resample('D').interpolate('slinear')
+weekly_third_rates = cumthirddoses.diff(7)
+weekly_third_rates.iloc[:8] = np.linspace(0, weekly_third_rates.iloc[7], 8)
+
 daily_rates = daily_rates[daily_rates.index >= pd.Timestamp(year=2021, month=1, day=10)] # Only valid after daily data starts being published
 # Need to correct initial NaNs
 weekly_rates.iloc[:8] = np.linspace(0, weekly_rates.iloc[7], 8)
 
 date_15mil = data_up_to + pd.Timedelta(days=(15_000_000 - total_doses) / (weekly_rates.values[-1] / 7))
-print(date_15mil)
+# print(date_15mil)
 days_until_15feb = (pd.Timestamp(year=2021, month=2, day=16) - data_up_to).days
 weekly_rate_needed_15mil = (15_000_000 - total_doses) / days_until_15feb * 7
 
 date_36mil = data_up_to + pd.Timedelta(days=(36_000_000 - total_doses) / (weekly_rates.values[-1] / 7))
-print(date_36mil)
+# print(date_36mil)
 days_until_15apr = (pd.Timestamp(year=2021, month=4, day=15) - data_up_to).days
 weekly_rate_needed_36mil = (36_000_000 - total_doses) / days_until_15apr * 7
 
 ########## Modelling
 
-print(data.groupby('date')[_first])
+# print(data.groupby('date')[_first])
 cum_firstdoses_by_date = data.groupby('date')[[_first]].sum().sum(axis=1).resample('D').interpolate('slinear')
 cum_seconddoses_by_date = data.groupby('date')[[_second]].sum().sum(axis=1).resample('D').interpolate('slinear')
+cum_thirddoses_by_date = data.groupby('date')[[_third]].sum().sum(axis=1).resample('D').interpolate('slinear')
 dose_offset = 12*7 # 11 weeks between doses
 target = 52_100_000
 # print(cum_firstdoses_by_date)
 daily_rate = weekly_rates[-1] / 7
-print(daily_rate)
+# print(daily_rate)
 
+# weekly_third_rates / 7
+def model_third_doses(weekly_third_rates):
+    model_daterange = pd.date_range(start=cum_firstdoses_by_date.index.min(), end='2022-12-31')
+    daily_rate = weekly_third_rates.values[-1] / 7
+
+    model_third = []
+    for date in model_daterange:
+        if date in cum_thirddoses_by_date.index:
+            model_third.append(cum_thirddoses_by_date[date])
+        else:
+            model_third.append(model_third[-1] + daily_rate)
+    print(model_third)
+    return pd.Series(model_third, index=model_daterange)
+        
 def model_cumdoses(daily_rate, daily_rate_factor, daily_rate_func):
-    model_daterange = pd.date_range(start=cum_firstdoses_by_date.index.min(), end='2021-12-01')
+    model_daterange = pd.date_range(start=cum_firstdoses_by_date.index.min(), end='2022-12-31')
 
     model_first = []
     model_second = []
@@ -119,12 +143,12 @@ def model_cumdoses(daily_rate, daily_rate_factor, daily_rate_func):
 
         # If we have data, we just reuse that data
         if date in cum_firstdoses_by_date.index:
-            print(date, cum_firstdoses_by_date[date])
+            # print(date, cum_firstdoses_by_date[date])
             model_first.append(cum_firstdoses_by_date[date])
             model_second.append(cum_seconddoses_by_date[date])
         
         else:
-            print('Imputing', date)
+            # print('Imputing', date)
             # Otherwise we model
             model_cum_second = model_second[-1]
             model_min_second = model_first[-dose_offset] if len(model_first) > dose_offset else 0
@@ -159,7 +183,7 @@ def cabinet_office(date):
 
 model_constant = model_cumdoses(daily_rate, 1, False)
 model_increase = model_cumdoses(None, 1, cabinet_office)
-print(model_constant[280:])
+# print(model_constant[280:])
 
 ########## DASH
 
@@ -175,6 +199,7 @@ fig_doses = go.Figure()
 fig_doses.add_trace(go.Scatter(x=cumdoses_by_date.index, y=cumdoses_by_date, name='Total doses'))
 fig_doses.add_trace(go.Scatter(x=people_by_date.index, y=people_by_date.values, name='1st doses'))
 fig_doses.add_trace(go.Scatter(x=second_doses_by_date.index, y=second_doses_by_date.values, name='2nd doses'))
+fig_doses.add_trace(go.Scatter(x=third_doses_by_date.index, y=third_doses_by_date.values, name='3rd doses'))
 # fig_doses.data[0].update(mode='markers+lines')
 fig_doses.update_layout(title="Total doses given in UK", xaxis_title="Date", yaxis_title="Cumulative doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
 fig_doses.update_yaxes(range=[0, cumdoses_by_date.max() * 1.05])
@@ -183,17 +208,24 @@ fig_doses.update_yaxes(range=[0, cumdoses_by_date.max() * 1.05])
 fig_rate = go.Figure()
 fig_rate.add_trace(go.Scatter(x=daily_rates.index, y=daily_rates.values*7, name="1 day rate", line=dict(dash="dash")))
 fig_rate.add_trace(go.Scatter(x=weekly_rates.index, y=weekly_rates.values, name="1 week rate"))
-fig_rate.add_trace(go.Scatter(x=weekly_first_rates.index, y=weekly_first_rates.values, name="1 week first doses", line=dict(color="rgba(32, 201, 151, 0.2)")))
+fig_rate.add_trace(go.Scatter(x=weekly_first_rates.index, y=weekly_first_rates.values, name="1 week first doses", line=dict(color="rgba(32, 201, 151, 0.3)")))
+fig_rate.add_trace(go.Scatter(x=weekly_third_rates.index, y=weekly_third_rates.values, name="1 week third doses", line=dict(color="rgba(241, 115, 0, 0.5)")))
 fig_rate.update_layout(title="Vaccination rate", xaxis_title="Date", yaxis_title="Doses/week", font=dict(size=15, family="nimbus-sans"), legend_title_text="Calculated over", margin=dict(l=0, r=0, t=50, b=0))
 fig_rate.update_yaxes(range=[0, daily_rates.max() * 7 * 1.05])
 
 # fig_rate.add_scatter(x=weekly_rates.index, y=weekly_rates.values, mode='lines', name="Weekly")
 
+
+model_third = model_third_doses(weekly_third_rates)
+# print(model_third.values)
+
 fig_model = go.Figure()
 fig_model.add_trace(go.Scatter(x=model_constant.date, y=cum_firstdoses_by_date, name="First doses", line=dict(color="#636EFA")))
 fig_model.add_trace(go.Scatter(x=model_constant.date, y=cum_seconddoses_by_date, name="Second doses", line=dict(color="#00CC96")))
-fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant['first'], name="First (model)", line=dict(dash="dash", color="#636EFA")))
-fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant.second, name="Second (model)", line=dict(dash="dash", color="#00CC96")))
+fig_model.add_trace(go.Scatter(x=model_increase.date, y=cum_thirddoses_by_date, name="Third doses", line=dict(color="#F17300")))
+fig_model.add_trace(go.Scatter(x=model_third.index, y=model_third.values, name="Third (model)", line=dict(dash="dash", color="#F17300")))
+# fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant['first'], name="First (model)", line=dict(dash="dash", color="#636EFA")))
+# fig_model.add_trace(go.Scatter(x=model_constant.date, y=model_constant.second, name="Second (model)", line=dict(dash="dash", color="#00CC96")))
 fig_model.update_layout(title="Assuming supply is constant", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
 fig_model.add_shape(type='line', x0=model_constant.date.min(), x1=model_constant.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
 fig_model.add_shape(type='line', x0=model_constant.date.min(), x1=model_constant.date.max(), y0=32_000_000, y1=32_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Phase 1 (>50s+)")
@@ -204,6 +236,7 @@ fig_model2 = go.Figure()
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_firstdoses_by_date, name="First doses", line=dict(color="#636EFA")))
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=cum_seconddoses_by_date, name="Second doses", line=dict(color="#00CC96")))
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase['first'], name="First (model)", line=dict(dash="dash", color="#636EFA")))
+fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase.second, name="Second (model)", line=dict(dash="dash", color="#00CC96")))
 fig_model2.add_trace(go.Scatter(x=model_increase.date, y=model_increase.second, name="Second (model)", line=dict(dash="dash", color="#00CC96")))
 fig_model2.update_layout(title="Cabinet Office Modelling Scenario (as of 31st March)", xaxis_title="Date", yaxis_title="Total doses", font=dict(size=15, family="nimbus-sans"), margin=dict(l=0, r=0, t=50, b=0))
 fig_model2.add_shape(type='line', x0=model_increase.date.min(), x1=model_increase.date.max(), y0=15_000_000, y1=15_000_000, line=dict(color='rgba(171, 99, 250, 0.2)'), name="Group 4 (>70s+)")
@@ -220,6 +253,8 @@ app.layout = html.Div(children=[
     dcc.Markdown(f"""
 # CovidTrack | Vaccine Rollout
 **{summarize(total_doses)}** doses given in total, to **{summarize(total_first_doses)}** people. **{summarize(total_doses - total_first_doses)}** people have been fully vaccinated.
+
+**{summarize(total_third_doses)}** people have been given a third dose.
 
 **[See also: R rate tracker](http://mb2345.user.srcf.net/covidtrack/)**
 
@@ -259,7 +294,9 @@ England: **{summarize(doses_per_capita_england)}** | Scotland: **{summarize(dose
      
     All adults in the UK have been offered a dose! Which makes most of what used to be this section obsolete.
 
-    """),
+    This model now just assumes a linear increase in first/second/third doses.
+
+    # """),
 
     html.Div([
         html.Div([
